@@ -34,5 +34,5 @@ jobs:
           REGISTRY: ghcr.io
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
           USERNAME: ${{ github.repository_owner }}
-          PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          PASSWORD: ${{ secrets.GH_TOKEN }}
 
