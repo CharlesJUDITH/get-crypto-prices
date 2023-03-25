@@ -24,6 +24,6 @@ If you want to have an "advanced interface" to watch the cache, use redis-stack:
 
 uvicorn app:app --reload
 
-Check the API doc http://127.0.0.1:8000/docs#/
+Check the API doc http://127.0.0.1:8000/docs
 
-Use the API http://127.0.0.1:8000/price?symbols=cosmos&currency=usd'
+Use the API http://127.0.0.1:8000/price?symbols=cosmos&currency=usd
