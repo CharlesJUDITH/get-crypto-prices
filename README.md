@@ -22,7 +22,11 @@ If you want to have an "advanced interface" to watch the cache, use redis-stack:
 
 ### Run the python app
 
-uvicorn app:app --reload
+`export REDIS_PORT=6379`
+`export REDIS_HOST=localhost`
+`export REDIS_DB=0`
+
+`uvicorn app:app --reload`
 
 Check the API doc http://127.0.0.1:8000/docs
 
