@@ -27,19 +27,7 @@ jobs:
           username: ${{github.actor}}
           password: ${{secrets.GITHUB_TOKEN}}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/${{ env.OWNER }}/${{ env.IMAGE_NAME }}:latest
-            ghcr.io/${{ env.OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-        env:
-          DOCKER_BUILDKIT: 1
-          PLATFORM: linux/amd64
-          REGISTRY: ghcr.io
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
-          USERNAME: ${{ github.actor }}
-          PASSWORD: ${{ secrets.GH_TOKEN }}
-
+      - name: 'Build and publish Image'
+        run: |
+          docker build . --tag ghcr.io/${{ env.OWNER }}/${{ env.IMAGE_NAME }}:latest
+          docker push ghcr.io/${{ env.OWNER }}/${{ env.IMAGE_NAME }}:latest
