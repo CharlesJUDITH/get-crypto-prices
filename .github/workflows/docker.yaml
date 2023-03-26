@@ -33,6 +33,6 @@ jobs:
           PLATFORM: linux/amd64
           REGISTRY: ghcr.io
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
-          USERNAME: ${{ github.repository_owner }}
+          USERNAME: ${{ github.actor }}
           PASSWORD: ${{ secrets.GH_TOKEN }}
 
