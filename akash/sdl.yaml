@@ -1,0 +1,63 @@
+---
+version: '2.0'
+services:
+  redis:
+    image: 'redis:latest'
+    expose:
+      - port: 6379
+        as: 6379
+        proto: tcp
+        to:
+          - global: true
+    env:
+      - REDIS_PASSWORD=yourpasswordhere
+      - REDIS_AOF_ENABLED=no
+      - ALLOW_EMPTY_PASSWORD=no
+  coingeck-prices:
+    image: 'ghcr.io/charlesjudith/coingecko-prices:latest'
+    expose:
+      - port: 8000
+        as: 8000
+        to:
+          - global: true
+    env:
+      - REDIS_PORT=REDIS_NP_SERVICE_PORT
+      - REDIS_HOST=REDIS_NP_SERVICE_HOST
+      - REDIS_DB=0
+      - REDIS_PASSWORD=yourpasswordhere
+profiles:
+  compute:
+    redis:
+      resources:
+        cpu:
+          units: 0.1
+        memory:
+          size: 200Mi
+        storage:
+          - size: 200Mb
+    coingeck-prices:
+      resources:
+        cpu:
+          units: 0.1
+        memory:
+          size: 200Mi
+        storage:
+          - size: 200Mi
+  placement:
+    dcloud:
+      pricing:
+        redis:
+          denom: uakt
+          amount: 1000
+        coingeck-prices:
+          denom: uakt
+          amount: 1000
+deployment:
+  redis:
+    dcloud:
+      profile: redis
+      count: 1
+  coingeck-prices:
+    dcloud:
+      profile: coingeck-prices
+      count: 1
