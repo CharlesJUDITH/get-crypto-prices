@@ -17,7 +17,7 @@ services:
     image: 'ghcr.io/charlesjudith/coingecko-prices:latest'
     expose:
       - port: 8000
-        as: 8000
+        as: 80
         to:
           - global: true
     env:
