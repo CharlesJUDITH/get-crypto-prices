@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{ app_name }}</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+        <style>
+            body {
+                padding-top: 70px;
+            }
+            .navbar-dark .navbar-brand {
+                color: #fff;
+                font-weight: bold;
+            }
+            .navbar-dark .navbar-nav .nav-link {
+                color: #fff;
+            }
+            .container {
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <nav class="navbar navbar-dark bg-dark fixed-top navbar-expand-lg">
+            <a class="navbar-brand" href="/">Crypto Prices API</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/symbols">Get all available symbols</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/docs?url=/redoc">API documentation</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <div class="container">
+            <p>An API for getting cryptocurrency prices.</p>
+            <h2>Endpoints:</h2>
+            <ul>
+                <li><a href="/symbols">Get all available symbols</a></li>
+                <li><a href="/docs?url=/redoc">Get the prices of cryptocurrencies by symbol</a></li>
+            </ul>
+        </div>
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    </body>
+</html>
