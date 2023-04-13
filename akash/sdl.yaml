@@ -13,16 +13,16 @@ services:
       - REDIS_PASSWORD=yourpasswordhere
       - REDIS_AOF_ENABLED=no
       - ALLOW_EMPTY_PASSWORD=no
-  coingeck-prices:
-    image: 'ghcr.io/charlesjudith/coingecko-prices:latest'
+  coingecko-prices:
+    image: 'ghcr.io/charlesjudith/get-crypto-prices:0.0.2'
     expose:
       - port: 8000
         as: 80
         to:
           - global: true
     env:
-      - REDIS_PORT=REDIS_NP_SERVICE_PORT
-      - REDIS_HOST=REDIS_NP_SERVICE_HOST
+      - REDIS_PORT=6379 
+      - REDIS_HOST=REDIS_NP_SERVICE_HOST # Replace that value by the $REDIS_NP_SERVICE_HOST visible in shell mode
       - REDIS_DB=0
       - REDIS_PASSWORD=yourpasswordhere
 profiles:
@@ -35,7 +35,7 @@ profiles:
           size: 200Mi
         storage:
           - size: 200Mb
-    coingeck-prices:
+    coingecko-prices:
       resources:
         cpu:
           units: 0.1
@@ -49,7 +49,7 @@ profiles:
         redis:
           denom: uakt
           amount: 1000
-        coingeck-prices:
+        coingecko-prices:
           denom: uakt
           amount: 1000
 deployment:
@@ -57,7 +57,7 @@ deployment:
     dcloud:
       profile: redis
       count: 1
-  coingeck-prices:
+  coingecko-prices:
     dcloud:
-      profile: coingeck-prices
+      profile: coingecko-prices
       count: 1
