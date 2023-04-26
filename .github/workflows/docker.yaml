@@ -47,3 +47,12 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Install Trivy
+        run: |
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.20.0/trivy_0.20.0_Linux-64bit.deb
+          sudo dpkg -i trivy_0.20.0_Linux-64bit.deb
+      
+      - name: Scan Docker image for vulnerabilities
+        run: |
+          trivy image ghcr.io/charlesjudith/cosmos-drama:${{ github.ref_name }}
