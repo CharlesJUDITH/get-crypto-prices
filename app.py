@@ -6,14 +6,22 @@ import redis
 from typing import Dict
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import Union
-from typing import List
+from typing import Union, List, Optional, Any, Dict
+import json
 import os
 
 class PriceResponse(BaseModel):
     symbol: str
     price: Union[float, int]
     currency: str
+    change_24h: Optional[float]
+
+class PriceInfo(BaseModel):
+    price: float
+    change_24h: float
+
+class SymbolPrice(BaseModel):
+    currencies: Dict[str, PriceInfo]
 
 # get configuration variables from environment variables
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
@@ -28,8 +36,8 @@ cg = CoinGeckoAPI()
 
 redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, password=None)
 
-# set cache expiration time to 15 minutes
-cache_expiration_time = 900
+# set cache expiration time to 5 minutes
+cache_expiration_time = 300
 
 
 templates = Jinja2Templates(directory="templates")
@@ -46,9 +54,9 @@ async def home(request: Request):
 # define API endpoint to get all available symbols
 @app.get('/symbols', response_model=List[str])
 async def get_crypto_symbols():
-    """Get all available symbols"""
     cache_key = "symbols"
     cached_symbols = redis_client.get(cache_key)
+
     if cached_symbols is not None:
         print("Fetching all available symbols from cache...")
         symbols = cached_symbols.decode().split(',')
@@ -57,40 +65,44 @@ async def get_crypto_symbols():
     print("Fetching all available symbols from CoinGecko API...")
     coins_list = cg.get_coins_list()
     symbols = [coin["id"] for coin in coins_list]
-
-    # cache the symbols in Redis
+    # Store the list of symbols in the cache
     redis_client.setex(cache_key, cache_expiration_time, ','.join(symbols))
 
     return symbols
 
-# define API endpoint to get the price of a cryptocurrency by symbol
-@app.get('/price', response_model=List[PriceResponse])
+@app.get('/price', response_model=Dict[str, Any])
 async def get_crypto_prices(symbols: str, currency: str = 'usd'):
-    """Get the prices of cryptocurrencies by symbol"""
-    # split the symbols string into a list of symbols
     symbol_list = symbols.split(',')
+    price_responses = {}  # Initialize an empty dictionary, not a list
 
-    # create a list of price responses for each symbol
-    price_responses = []
     for symbol in symbol_list:
-        # check if price data is available in Redis cache
         cache_key = f"price:{symbol}:{currency}"
-        cached_price = redis_client.get(cache_key)
-        if cached_price is not None:
+        cached_price_data = redis_client.get(cache_key)
+
+        if cached_price_data:
+            cached_price_data = json.loads(cached_price_data.decode())
             print(f"Fetching {symbol} price in {currency} from cache...")
-            price_responses.append({'symbol': symbol, 'price': float(cached_price.decode()), 'currency': currency})
+            price = cached_price_data['price']
+            price_variation = cached_price_data['change_24h']
         else:
-            # fetch price data from CoinGecko API
             print(f"Fetching {symbol} price in {currency} from CoinGecko API...")
-            price_data = cg.get_price(ids=symbol, vs_currencies=currency)
+            price_data = cg.get_price(ids=symbol, vs_currencies=currency, include_24hr_change='true')
+
             if not price_data.get(symbol):
-                return JSONResponse(content={'message': f"{symbol} not found"}, status_code=404)
+                continue
+
             price = price_data[symbol][currency]
+            price_variation = price_data[symbol].get(f"{currency}_24h_change")
 
-            # cache the price data in Redis
-            redis_client.setex(cache_key, cache_expiration_time, price)
+            # Cache the price and 24h_change
+            redis_client.setex(cache_key, cache_expiration_time, json.dumps({'price': price, 'change_24h': price_variation}))
 
-            price_responses.append({'symbol': symbol, 'price': price, 'currency': currency})
+        # Update the price_responses dictionary
+        if symbol not in price_responses:
+            price_responses[symbol] = {}
+
+        price_responses[symbol][currency] = price
+        price_responses[symbol][f"{currency}_24h_change"] = price_variation
 
     return price_responses
 
