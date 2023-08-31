@@ -28,6 +28,7 @@ REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PORT = os.environ.get('REDIS_PORT', 6379)
 REDIS_DB = os.environ.get('REDIS_DB', 0)
 REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', None)
+CACHE_EXPIRATION_TIME = os.environ.get('CACHE_EXPIRATION_TIME', 300)
 
 app = FastAPI(title="Crypto Prices API", description="An API for getting cryptocurrency prices", version="1.0.0")
 
@@ -37,7 +38,7 @@ cg = CoinGeckoAPI()
 redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, password=None)
 
 # set cache expiration time to 5 minutes
-cache_expiration_time = 300
+cache_expiration_time = int(CACHE_EXPIRATION_TIME)
 
 
 templates = Jinja2Templates(directory="templates")
