@@ -36,6 +36,8 @@ Check the API doc http://127.0.0.1:8000/docs
 
 Use the API http://127.0.0.1:8000/price?symbols=cosmos&currency=usd
 
+For Kubernetes deployment, there's an Helm chart: https://github.com/StakeLab-Zone/StakeLab/tree/main/Charts/coingecko-api
+
 ## Demo
 
 The demo deployed on Akash cloud is not up.
