@@ -32,9 +32,15 @@ If you want to have an "advanced interface" to watch the cache, use redis-stack:
 
 `docker run --env REDIS_HOST --env REDIS_PORT --env REDIS_DB --env REDIS_PASSWORD --env CACHE_EXPIRATION_TIME -p 8000:8000 ghcr.io/charlesjudith/get-crypto-prices:0.0.7`
 
-Check the API doc http://127.0.0.1:8000/docs
+Check the API doc: `http://127.0.0.1:8000/docs`
 
-Use the API http://127.0.0.1:8000/price?symbols=cosmos&currency=usd
+Use the API: `http://127.0.0.1:8000/price?symbols=cosmos&currency=usd`
+
+Price on the last 24 hours is sent by default:
+
+```
+{"cosmos":{"usd":7.13,"usd_24h_change":3.6971000822019406}}
+```
 
 For Kubernetes deployment, there's an Helm chart: https://github.com/StakeLab-Zone/StakeLab/tree/main/Charts/coingecko-api
 
