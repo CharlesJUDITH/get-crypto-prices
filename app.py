@@ -41,7 +41,7 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
-    redis_client.close()
+    await redis_client.close()
 
 @app.get('/')
 async def home(request: Request):
@@ -54,7 +54,6 @@ async def home(request: Request):
 
 @app.get('/symbols', response_model=List[str])
 async def get_crypto_symbols():
-    redis_client = await aioredis.create_redis((REDIS_HOST, REDIS_PORT))
     cache_key = "symbols"
     cached_symbols = await redis_client.get(cache_key)
     
