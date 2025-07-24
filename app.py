@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel
 from typing import Union, Optional, List, Dict, Any
 from aiohttp import ClientSession
-import aioredis
+import redis.asyncio as redis  # Using redis package async functionality
 import json
 import os
 import asyncio
@@ -39,12 +39,16 @@ BATCH_SIZE = 100
 @app.on_event("startup")
 async def startup():
     global redis_client
-    redis_url = f"redis://{REDIS_HOST}:{REDIS_PORT}"
-    redis_client = aioredis.from_url(redis_url, decode_responses=True)
+    # Create Redis client with redis-py async functionality
+    redis_client = redis.Redis(
+        host=REDIS_HOST, 
+        port=REDIS_PORT, 
+        decode_responses=True
+    )
 
 @app.on_event("shutdown")
 async def shutdown():
-    await redis_client.close()
+    await redis_client.aclose()  # Use aclose() for proper async cleanup
 
 @app.get('/')
 async def home(request: Request):
@@ -81,10 +85,10 @@ async def get_cached_prices(symbols: List[str], currency: str) -> Dict[str, Dict
     cache_keys = [f"price:{symbol}:{currency}" for symbol in symbols]
     
     # Get all cached data in a single pipeline operation
-    pipe = redis_client.pipeline()
-    for key in cache_keys:
-        pipe.get(key)
-    cached_results = await pipe.execute()
+    async with redis_client.pipeline() as pipe:
+        for key in cache_keys:
+            pipe.get(key)
+        cached_results = await pipe.execute()
     
     cached_data = {}
     uncached_symbols = []
@@ -117,13 +121,13 @@ async def fetch_prices_batch(symbols: List[str], currency: str) -> Dict[str, Dic
         
         if price_data:
             # Cache each symbol's data individually for future requests
-            pipe = redis_client.pipeline()
-            for symbol in symbols:
-                if symbol in price_data:
-                    cache_key = f"price:{symbol}:{currency}"
-                    symbol_data = {symbol: price_data[symbol]}
-                    pipe.setex(cache_key, CACHE_EXPIRATION_TIME, json.dumps(symbol_data))
-            await pipe.execute()
+            async with redis_client.pipeline() as pipe:
+                for symbol in symbols:
+                    if symbol in price_data:
+                        cache_key = f"price:{symbol}:{currency}"
+                        symbol_data = {symbol: price_data[symbol]}
+                        pipe.setex(cache_key, CACHE_EXPIRATION_TIME, json.dumps(symbol_data))
+                await pipe.execute()
             
             logging.info(f"Fetched {len(price_data)} symbols from CoinGecko API")
         
