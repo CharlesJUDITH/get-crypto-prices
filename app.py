@@ -15,10 +15,14 @@ class PriceResponse(BaseModel):
     price: Union[float, int]
     currency: str
     change_24h: Optional[float]
+    market_cap: Optional[float]
+    circulating_supply: Optional[float]
 
 class PriceInfo(BaseModel):
     price: float
     change_24h: float
+    market_cap: Optional[float]
+    circulating_supply: Optional[float]
 
 class SymbolPrice(BaseModel):
     currencies: Dict[str, PriceInfo]
@@ -105,37 +109,105 @@ async def get_cached_prices(symbols: List[str], currency: str) -> Dict[str, Dict
     
     return cached_data, uncached_symbols
 
-async def fetch_prices_batch(symbols: List[str], currency: str) -> Dict[str, Dict]:
-    """Fetch prices for multiple symbols in a single API call"""
+async def fetch_detailed_data(symbols: List[str], currency: str) -> Dict[str, Dict]:
+    """Fetch detailed data including circulating supply using coins/markets endpoint"""
     if not symbols:
         return {}
     
     try:
-        # CoinGecko accepts comma-separated symbol list
+        # Use the coins/markets endpoint for detailed data including circulating supply
+        market_data = cg.get_coins_markets(
+            vs_currency=currency,
+            ids=','.join(symbols),
+            order='market_cap_desc',
+            per_page=len(symbols),
+            page=1,
+            sparkline=False,
+            price_change_percentage='24h'
+        )
+        
+        detailed_data = {}
+        for coin in market_data:
+            symbol = coin['id']
+            detailed_data[symbol] = {
+                symbol: {
+                    currency: coin['current_price'],
+                    f"{currency}_market_cap": coin['market_cap'],
+                    f"{currency}_24h_change": coin['price_change_percentage_24h'],
+                    "circulating_supply": coin['circulating_supply']
+                }
+            }
+        
+        return detailed_data
+    
+    except Exception as e:
+        logging.error(f"Error fetching detailed market data: {e}")
+        return {}
+
+async def fetch_prices_batch(symbols: List[str], currency: str) -> Dict[str, Dict]:
+    """Fetch prices for multiple symbols with market cap and circulating supply"""
+    if not symbols:
+        return {}
+    
+    try:
+        # First try the simple price endpoint with market cap
         symbols_str = ','.join(symbols)
         price_data = cg.get_price(
             ids=symbols_str, 
             vs_currencies=currency, 
-            include_24hr_change='true'
+            include_24hr_change='true',
+            include_market_cap='true'
         )
         
-        if price_data:
+        # Get detailed data for circulating supply
+        detailed_data = await fetch_detailed_data(symbols, currency)
+        
+        # Merge the data
+        final_data = {}
+        for symbol in symbols:
+            if symbol in price_data:
+                symbol_info = price_data[symbol].copy()
+                
+                # Add circulating supply from detailed data if available
+                if symbol in detailed_data and 'circulating_supply' in detailed_data[symbol][symbol]:
+                    symbol_info['circulating_supply'] = detailed_data[symbol][symbol]['circulating_supply']
+                
+                final_data[symbol] = {symbol: symbol_info}
+        
+        if final_data:
             # Cache each symbol's data individually for future requests
             async with redis_client.pipeline() as pipe:
                 for symbol in symbols:
-                    if symbol in price_data:
+                    if symbol in final_data:
                         cache_key = f"price:{symbol}:{currency}"
-                        symbol_data = {symbol: price_data[symbol]}
-                        pipe.setex(cache_key, CACHE_EXPIRATION_TIME, json.dumps(symbol_data))
+                        pipe.setex(cache_key, CACHE_EXPIRATION_TIME, json.dumps(final_data[symbol]))
                 await pipe.execute()
             
-            logging.info(f"Fetched {len(price_data)} symbols from CoinGecko API")
+            logging.info(f"Fetched {len(final_data)} symbols with detailed data from CoinGecko API")
         
-        return price_data or {}
+        return final_data or {}
     
     except Exception as e:
-        logging.error(f"Error fetching batch prices: {e}")
-        return {}
+        logging.error(f"Error fetching batch prices with detailed data: {e}")
+        # Fallback to simple price data without circulating supply
+        try:
+            symbols_str = ','.join(symbols)
+            price_data = cg.get_price(
+                ids=symbols_str, 
+                vs_currencies=currency, 
+                include_24hr_change='true',
+                include_market_cap='true'
+            )
+            
+            fallback_data = {}
+            for symbol in symbols:
+                if symbol in price_data:
+                    fallback_data[symbol] = {symbol: price_data[symbol]}
+            
+            return fallback_data or {}
+        except Exception as fallback_e:
+            logging.error(f"Fallback also failed: {fallback_e}")
+            return {}
 
 def process_batches(symbols: List[str], batch_size: int = BATCH_SIZE) -> List[List[str]]:
     """Split symbols into batches for processing"""
@@ -188,9 +260,14 @@ async def get_crypto_prices(symbols: str, currency: str = 'usd'):
                 if symbol in symbol_data and currency in symbol_data[symbol]:
                     price = symbol_data[symbol][currency]
                     change_24h = symbol_data[symbol].get(f"{currency}_24h_change")
+                    market_cap = symbol_data[symbol].get(f"{currency}_market_cap")
+                    circulating_supply = symbol_data[symbol].get("circulating_supply")
+                    
                     price_responses[symbol] = {
                         currency: price,
-                        f"{currency}_24h_change": change_24h
+                        f"{currency}_24h_change": change_24h,
+                        f"{currency}_market_cap": market_cap,
+                        "circulating_supply": circulating_supply
                     }
                 else:
                     logging.warning(f"Invalid data structure for {symbol}")
