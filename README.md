@@ -30,7 +30,7 @@ If you want to have an "advanced interface" to watch the cache, use redis-stack:
 
 `docker pull ghcr.io/charlesjudith/get-crypto-prices:0.0.7`
 
-`docker run --env REDIS_HOST --env REDIS_PORT --env REDIS_DB --env REDIS_PASSWORD --env CACHE_EXPIRATION_TIME -p 8000:8000 ghcr.io/charlesjudith/get-crypto-prices:0.0.7`
+`docker run --env REDIS_HOST --env REDIS_PORT --env REDIS_DB --env REDIS_PASSWORD --env CACHE_EXPIRATION_TIME -p 8000:8000 ghcr.io/charlesjudith/get-crypto-prices:0.0.11`
 
 Check the API doc: `http://127.0.0.1:8000/docs`
 
